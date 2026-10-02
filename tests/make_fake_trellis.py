@@ -8,7 +8,11 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 addon_utils.enable("rigify", default_set=True)
 getattr(bpy.ops.object, f"armature_{preset}_metarig_add")()
 meta = bpy.context.object
-skip = ("lid", "brow", "lip", "nose", "cheek", "teeth", "tongue", "chin", "jaw", "eye", "ear", "r_", "f_", "palm", "pinky", "ring", "middle", "index", "thumb", "t_", "feather", "mane")
+if __import__("os").environ.get("FRONT"):
+    sys.path.insert(0, __import__("os").path.join(__import__("os").path.dirname(__import__("os").path.abspath(__file__)), "..", "strumenti"))
+    import pipeline_creatura
+    pipeline_creatura.aggiungi_zampe_anteriori(meta)
+skip = ("lid", "brow", "lip", "nose", "cheek", "teeth", "tongue", "chin", "jaw", "eye", "ear", "r_", "f_", "palm", "pinky", "ring", "middle", "index", "thumb", "t_index", "t_middle", "t_ring", "t_thumb", "feather", "mane")
 bm = bmesh.new()
 for b in meta.data.bones:
     if any(k in b.name for k in skip):

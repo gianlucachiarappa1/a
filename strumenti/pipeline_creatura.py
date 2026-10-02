@@ -139,10 +139,58 @@ def importa_glb(path, ruota_z):
 
 # ----------------------------------------------------------------------------- fase 2: meta-rig, rig, skin
 
-def crea_e_adatta_metarig(mesh, preset, fam):
+def aggiungi_zampe_anteriori(meta):
+    """Adattamento del meta-rig Bird: duplica la catena della zampa posteriore (limbs.paw) all'altezza delle spalle,
+    cosi' una creatura alata a 4 zampe (es. volpe-pipistrello) ha anche gli arti anteriori."""
+    bpy.context.view_layer.objects.active = meta
+    bpy.ops.object.mode_set(mode="EDIT")
+    eb = meta.data.edit_bones
+    sh = eb["shoulder.L"]
+    dy = sh.head.y - eb["thigh.L"].head.y  # sposta indietro->avanti (-Y) fino alla spalla
+    dy = -abs(dy) - 0.01 * (eb["thigh.L"].head.z)
+    parent = eb["spine.003"] if "spine.003" in eb else eb["spine.004"]
+    chain = ["thigh", "shin", "foot", "toe", "toes_parent"]
+    nuove = []
+    for side in ("L", "R"):
+        for n in chain:
+            src = eb.get(f"{n}.{side}")
+            if src is None:
+                continue
+            b = eb.new(f"front_{n}.{side}")
+            b.head, b.tail, b.roll = src.head.copy(), src.tail.copy(), src.roll
+            b.head.y += dy
+            b.tail.y += dy
+            nuove.append((b.name, f"{n}.{side}"))
+        for n in chain:
+            if f"front_{n}.{side}" not in eb:
+                continue
+            src = eb[f"{n}.{side}"]
+            b = eb[f"front_{n}.{side}"]
+            b.parent = eb[f"front_{src.parent.name.split('.')[0]}.{side}"] if src.parent and f"front_{src.parent.name.split('.')[0]}.{side}" in eb else parent
+            b.use_connect = src.use_connect
+    bpy.ops.object.mode_set(mode="POSE")
+    for nuovo, orig in nuove:
+        pb_n, pb_o = meta.pose.bones[nuovo], meta.pose.bones[orig]
+        pb_n.rigify_type = pb_o.rigify_type
+        if pb_o.rigify_type:
+            for prop in pb_o.rigify_parameters.bl_rna.properties:
+                if prop.identifier == "rna_type":
+                    continue
+                try:
+                    setattr(pb_n.rigify_parameters, prop.identifier, getattr(pb_o.rigify_parameters, prop.identifier))
+                except Exception:
+                    pass
+    bpy.ops.object.mode_set(mode="OBJECT")
+    log(f"aggiunte zampe anteriori: {[n for n, _ in nuove]}")
+
+
+def crea_e_adatta_metarig(mesh, preset, fam, zampe_anteriori=False):
     getattr(bpy.ops.object, f"armature_{preset}_metarig_add")()
     meta = bpy.context.object
     meta.name = "metarig"
+    if zampe_anteriori:
+        assert preset == "bird", "--zampe-anteriori vale solo per la categoria volatile"
+        aggiungi_zampe_anteriori(meta)
 
     def bounds(arm):
         pts = []
@@ -1016,6 +1064,8 @@ def main(argv):
     ap.add_argument("--nome-locomozione", default=None, dest="nome_locomozione")
     ap.add_argument("--altezza-aria", type=float, default=0.5, dest="altezza_aria",
                     help="quota iniziale del KO per volanti/pesci, in multipli dell'altezza")
+    ap.add_argument("--zampe-anteriori", action="store_true", dest="zampe_anteriori",
+                    help="solo volatile: aggiunge due zampe anteriori al meta-rig Bird (creature alate a 4 zampe)")
     ap.add_argument("--salva-prefit", action="store_true", help="salva .blend dopo il fit del meta-rig e si ferma")
     ap.add_argument("--forza-export", action="store_true", help="esporta anche se la validazione fallisce (sconsigliato)")
     args = ap.parse_args(argv)
@@ -1027,7 +1077,7 @@ def main(argv):
     mesh.name = mesh.data.name = args.nome
     uv0 = uv_signature(mesh)
     log("UV TRELLIS:", uv0)
-    meta = crea_e_adatta_metarig(mesh, preset, fam)
+    meta = crea_e_adatta_metarig(mesh, preset, fam, args.zampe_anteriori)
     if args.salva_prefit:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(out, f"{args.nome}_prefit.blend"))
         log("salvato prefit: adatta le ossa a mano e rilancia con il .blend")
