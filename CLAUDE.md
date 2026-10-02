@@ -62,3 +62,8 @@ Azioni obbligatorie per ogni creatura, come tracce NLA: `idle`, `walk`/`trot`/`s
 ## Note operative
 - Se un passo non è verificabile nell'ambiente (es. Blender/GPU assenti), dichiaralo; non dire "validato" senza averlo eseguito.
 - Dichiara sempre ogni scostamento dalle regole sopra.
+
+## Strumenti nel repo
+- `strumenti/pipeline_creatura.py`: FASE 2–4 automatizzate (rig Rigify, skinning, 5 azioni NLA, validazione, export). Vedi `strumenti/README_pipeline.md` per uso e limiti noti.
+- `tests/run_tests.sh`: collaudo della pipeline su mesh sintetiche (non sostituisce la prova su mesh reali TRELLIS).
+- Ambiente cloud: Blender si puo' usare come modulo (`pip install bpy`), niente GPU quindi niente TRELLIS: quella fase gira sul PC dell'utente.
