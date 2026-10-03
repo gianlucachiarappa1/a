@@ -1,0 +1,15 @@
+# torch/torchvision are installed separately by setup.ps1 (CUDA 12.8 build, needed for RTX 50).
+# TripoSR dependencies, without torchmcubes (replaced by shims/torchmcubes).
+omegaconf==2.3.0
+einops==0.7.0
+transformers==4.35.0
+huggingface-hub<0.26
+numpy<2
+Pillow>=10.1
+trimesh==4.0.5
+scikit-image>=0.22
+rembg==2.0.57
+onnxruntime
+xatlas==0.0.9
+moderngl==5.10.0
+imageio[ffmpeg]
